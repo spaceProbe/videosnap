@@ -202,6 +202,7 @@
     [self enableScreenCaptureWithDAL];
 
     if (@available(macOS 10.15, *)) {
+        verbose("(Using 10.15 Mode)\n");
         AVCaptureDeviceDiscoverySession *discoverySession = [
                 AVCaptureDeviceDiscoverySession
                 discoverySessionWithDeviceTypes:
@@ -215,6 +216,7 @@
           }
         }
     } else {
+        verbose("(Using connectedDevices Mode)\n");
         [connectedDevices addObjectsFromArray:[AVCaptureDevice devicesWithMediaType:AVMediaTypeVideo]];
         [connectedDevices addObjectsFromArray:[AVCaptureDevice devicesWithMediaType:AVMediaTypeMuxed]];
     }
@@ -256,9 +258,12 @@
 - (void)listConnectedDevices {
     unsigned long deviceCount = [connectedDevices count];
 	if (deviceCount > 0) {
-		console("Found %li connected video devices:\n", deviceCount);
+        console("Found %li connected video devices:\n", deviceCount);
 		for (AVCaptureDevice *device in connectedDevices) {
-			console("* %s\n", [[device localizedName] UTF8String]);
+            NSString *string = [device localizedName];
+            NSString *tempStr = [string stringByAppendingString:@":"];
+            NSString *resultStr = [tempStr stringByAppendingString:[device uniqueID]];
+			console("* %s\n", [resultStr UTF8String]);
 		}
 	} else {
 		console("No video devices found.\n");
@@ -284,8 +289,13 @@
  */
 - (AVCaptureDevice *)deviceNamed:(NSString *)name {
   AVCaptureDevice *device = nil;
+    
   for (AVCaptureDevice *thisDevice in connectedDevices) {
+
     if ([name isEqualToString:[thisDevice localizedName]]) {
+      device = thisDevice;
+    }
+    if ([name isEqualToString:[thisDevice uniqueID]]) {
       device = thisDevice;
     }
   }
@@ -312,7 +322,7 @@
 	verbose("  file:     %s\n",       [filePath UTF8String]);
 	verbose("  video:    %s\n",       [encodingPreset UTF8String]);
 	verbose("  audio:    %s\n",       [noAudio ? @"(none)": @"HQ AAC" UTF8String]);
-	verbose("  device:   %s\n",       [[videoDevice localizedName] UTF8String]);
+	verbose("  device:   %s\n",       [[videoDevice uniqueID] UTF8String]);
 	verbose("            %s - %s\n",  [[videoDevice modelID] UTF8String], [[videoDevice manufacturer] UTF8String]);
 
 	verbose("(initializing capture session)\n");
